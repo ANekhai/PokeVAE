@@ -43,3 +43,9 @@ class VAE(nn.Module):
 
     def forward(self, im):
         pass
+
+    def generate(self):
+        pass
+
+    def interpolate(self):
+        pass
