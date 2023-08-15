@@ -58,6 +58,7 @@ class Encoder(nn.Module):
             ConvBlock(nef*4, nef*8, 4, 2, 1),
             # (b, nef*8, 6, 6)
             ConvBlock(nef*8, nef*16, 6, 1, 0)
+            # (b, nef*16, 1, 1)
         )
 
 
@@ -66,11 +67,32 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self):
+    def __init__(self, config):
         super(Decoder, self).__init__()
 
+        assert config.im_c is not None
+        assert config.ndf is not None
+        ndf = config.ndf
+
+        self.model = nn.Sequential(
+            # input: (b, ndf*16, 1, 1)
+            TransConvBlock(ndf*16, ndf*8, 6, 1, 0),
+            # (b, ndf*8, 6, 6)
+            TransConvBlock(ndf*8, ndf*4, 4, 2, 1),
+            # (b, ndf*4, 12, 12)
+            TransConvBlock(ndf*4, ndf*2, 4, 2, 1),
+            # (b, ndf*2, 24, 24)
+            TransConvBlock(ndf*2, ndf, 4, 2, 1),
+            # (b, ndf, 48, 48)
+            #TODO: Change output block to use softmax + colorspace
+            nn.ConvTranspose2d(ndf, config.im_c, 4, 2, 1),
+            nn.Tanh()
+            # (b, 3, 96, 96)
+        )
+
+
     def forward(self, z):
-        pass
+        return self.model(z)
 
 
 class ColorBlock(nn.Module):
@@ -82,11 +104,31 @@ class ColorBlock(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self):
+    def __init__(self, config: VAEParams):
         super(VAE, self).__init__()
 
+        assert config.z_dim is not None
+
+        self.encoder = Encoder(config)
+        self.decoder = Decoder(config)
+
+        self.to_mu = nn.Conv2d(config.nef*16, config.z_dim, 1, 1, 0)
+        self.to_logvar = nn.Conv2d(config.nef*16, config.z_dim, 1, 1, 0)
+        self.from_latent = nn.Conv2d(config.z_dim, config.ndf*16, 1, 1, 0)
+
     def forward(self, im):
-        pass
+        features = self.encoder(im)
+        mu, logvar = self.to_mu(features), self.to_logvar(features)
+        z = self.reparameterize(mu, logvar)
+        features = self.from_latent(z)
+        return self.decoder(features), mu, logvar
+
+
+    def reparameterize(self, mu, log_sigma):
+        sigma = torch.exp(0.5 * log_sigma)
+        eps = torch.randn_like(sigma)
+        return mu + (eps * sigma)
+        
 
     def generate(self):
         pass
@@ -96,12 +138,8 @@ class VAE(nn.Module):
 
 
 if __name__ == "__main__":
-    pass
-
-
-if __name__ == "__main__":
-    test_block = Encoder(VAEParams)
+    test_block = VAE(VAEParams)
 
     test_tensor = torch.randn(4, 3, 96, 96)
-    out_tensor = test_block(test_tensor)
+    out_tensor, _, _ = test_block(test_tensor)
     print(out_tensor.shape)
