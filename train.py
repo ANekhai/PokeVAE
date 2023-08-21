@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch import optim
+from torchvision import transforms
 
 from model import VAE, VAEParams
 from dataset import PokeDataset
@@ -19,8 +20,8 @@ beta2: float = 0.999
 
 device: torch.device = torch.device("cuda:0" if (torch.cuda.is_available()) else "cpu")
 
-data_root: str = "./data"
-csv_path: str = "./pokemon.csv"
+data_root: str = "data"
+csv_path: str = "pokemon.csv"
 
 checkpoint_dir: str = "pretrained_models"
 from_checkpoint: bool = False
@@ -44,6 +45,13 @@ vae = VAE(VAEParams).to(device)
 
 if from_checkpoint:
     pass
+
+# load data
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+
 
 # setup
 
