@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch import TensorType
+from torch import Tensor
 
 
 class VAEParams:
@@ -108,6 +108,7 @@ class VAE(nn.Module):
         super(VAE, self).__init__()
 
         assert config.z_dim is not None
+        self.z_dim = config.z_dim
 
         self.encoder = Encoder(config)
         self.decoder = Decoder(config)
@@ -120,8 +121,7 @@ class VAE(nn.Module):
         features = self.encoder(im)
         mu, logvar = self.to_mu(features), self.to_logvar(features)
         z = self.reparameterize(mu, logvar)
-        features = self.from_latent(z)
-        return self.decoder(features), mu, logvar
+        return self.decode(z)
 
 
     def reparameterize(self, mu, log_sigma):
@@ -129,12 +129,14 @@ class VAE(nn.Module):
         eps = torch.randn_like(sigma)
         return mu + (eps * sigma)
         
+    def decode(self, z):
+        return self.decoder(self.from_latent(z))
 
-    def generate(self):
-        pass
-
-    def interpolate(self):
-        pass
+    @torch.no_grad()
+    def generate(self, mu: Tensor, logvar: Tensor):
+        z = self.reparameterize(mu, logvar)
+        return self.decode(z)
+        
 
 
 if __name__ == "__main__":
