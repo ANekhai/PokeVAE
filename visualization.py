@@ -15,7 +15,7 @@ class AnimationHandler():
         self.padding = padding
 
     def push_frame(self, new_frame: Tensor):
-        self.animation_frames.append(new_frame)
+        self.animation_frames.append(new_frame.cpu())
 
     def animate(self, show=True, fig_size=(8,8)) -> list[Tensor]:
         # to animation
