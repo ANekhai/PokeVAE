@@ -16,13 +16,8 @@ class PokemonDataset(Dataset):
     def __len__(self):
         return len(self.df)
 
-
     def __getitem__(self, idx):
         img_path = os.path.join(self.root_dir, self.df.iloc[idx, 0])
-        # image = read_image(img_path).type(torch.float32)
         image = Image.open(img_path)
-
-        if self.transform:
-            image = self.transform(image)
-
+        if self.transform: image = self.transform(image)
         return image
