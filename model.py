@@ -121,7 +121,7 @@ class VAE(nn.Module):
         features = self.encoder(im)
         mu, logvar = self.to_mu(features), self.to_logvar(features)
         z = self.reparameterize(mu, logvar)
-        return self.decode(z)
+        return self.decode(z), mu, logvar
 
 
     def reparameterize(self, mu, log_sigma):
